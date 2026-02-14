@@ -107,6 +107,17 @@ document.addEventListener('DOMContentLoaded', function () {
       var HUBSPOT_PORTAL_ID = '245174552';
       var HUBSPOT_FORM_GUID = '3bc1107d-b15a-4037-815d-714aeaf6a2dd';
 
+      // Read HubSpot tracking cookie
+      var hutk = getCookie('hubspotutk');
+
+      var hubspotContext = {
+        pageUri: window.location.href,
+        pageName: document.title
+      };
+      if (hutk) {
+        hubspotContext.hutk = hutk;
+      }
+
       var hubspotData = {
         fields: [
           { name: 'firstname', value: name },
@@ -114,10 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
           { name: 'phone', value: '+91' + mobile },
           { name: 'business_type', value: businessType }
         ],
-        context: {
-          pageUri: window.location.href,
-          pageName: document.title
-        }
+        context: hubspotContext
       };
 
       fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
@@ -146,6 +154,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Form Utility Functions
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? match[2] : null;
+  }
+
   function isValidEmail(email) {
     var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
