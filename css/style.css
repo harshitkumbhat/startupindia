@@ -2722,6 +2722,11 @@ select.form-input option {
     margin-right: auto;
   }
 
+  .hero-pricing {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .btn-hero-cta {
     margin: 0 auto;
   }
@@ -3016,6 +3021,19 @@ select.form-input option {
 
   .hero-subtitle {
     font-size: 0.9375rem;
+  }
+
+  .hero-pricing {
+    padding: 0.5rem 1.125rem;
+    gap: 0.5rem;
+  }
+
+  .pricing-label {
+    font-size: 0.8125rem;
+  }
+
+  .pricing-amount {
+    font-size: 1.0625rem;
   }
 
   .hero-form-card {
