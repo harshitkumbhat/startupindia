@@ -878,6 +878,16 @@ select.form-input option {
   transform: translateY(0);
 }
 
+/* Plan Price (above submit button) */
+.form-plan-price {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.01em;
+  margin-bottom: 0.25rem;
+}
+
 /* Form Disclaimer */
 .form-disclaimer {
   display: flex;
