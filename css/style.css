@@ -878,14 +878,34 @@ select.form-input option {
   transform: translateY(0);
 }
 
-/* Plan Price (above submit button) */
+/* Plan Price Badge (above submit button) */
 .form-plan-price {
-  text-align: center;
-  font-size: 0.875rem;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: var(--radius-full);
+  padding: 0.5rem 1.25rem;
+  margin-bottom: 0.25rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.1), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.form-plan-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.01em;
-  margin-bottom: 0.25rem;
+}
+
+.form-plan-amount {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #fef08a;
+  letter-spacing: -0.01em;
 }
 
 /* Form Disclaimer */
