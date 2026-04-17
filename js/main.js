@@ -81,9 +81,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const mobile = document.getElementById('userMobile').value.trim();
       const businessTypeEl = document.getElementById('businessType');
       const businessType = businessTypeEl ? businessTypeEl.value : '';
+      const companyNameEl = document.getElementById('companyName');
+      const companyName = companyNameEl ? companyNameEl.value.trim() : '';
 
       // Basic validation
-      if (!name || !email || !mobile) {
+      if (!name || !email || !mobile || !companyName) {
         showFormError('Please fill in all fields.');
         return;
       }
@@ -123,7 +125,8 @@ document.addEventListener('DOMContentLoaded', function () {
           { name: 'firstname', value: name },
           { name: 'email', value: email },
           { name: 'phone', value: '+91' + mobile },
-          { name: 'business_type', value: businessType }
+          { name: 'business_type', value: businessType },
+          { name: 'company', value: companyName }
         ],
         context: hubspotContext
       };
