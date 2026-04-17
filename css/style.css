@@ -895,14 +895,14 @@ select.form-input option {
 }
 
 .form-plan-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.01em;
 }
 
 .form-plan-amount {
-  font-size: 0.9375rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #fef08a;
   letter-spacing: -0.01em;
