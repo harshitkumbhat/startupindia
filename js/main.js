@@ -84,6 +84,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const companyNameEl = document.getElementById('companyName');
       const companyName = companyNameEl ? companyNameEl.value.trim() : '';
 
+      // URL parameters for campaign tracking
+      const urlParams = new URLSearchParams(window.location.search);
+      const campaignValue = urlParams.get('utm_campaign') || urlParams.get('campaign') || '';
+
       // Basic validation
       if (!name || !email || !mobile || !companyName) {
         showFormError('Please fill in all fields.');
@@ -130,6 +134,10 @@ document.addEventListener('DOMContentLoaded', function () {
         ],
         context: hubspotContext
       };
+
+      if (campaignValue) {
+        hubspotData.fields.push({ name: 'campaign', value: campaignValue });
+      }
 
       fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
         method: 'POST',
