@@ -71,6 +71,38 @@ document.addEventListener('DOMContentLoaded', function () {
   const heroForm = document.getElementById('heroContactForm');
   const submitBtn = document.getElementById('formSubmitBtn');
 
+  // ===================================
+  // Form Auto-fill from URL Parameters
+  // ===================================
+  const autofillParams = new URLSearchParams(window.location.search);
+  
+  const autofillMap = {
+    'userName': autofillParams.get('name') || autofillParams.get('userName'),
+    'userEmail': autofillParams.get('email'),
+    'userMobile': autofillParams.get('mobile') || autofillParams.get('phone'),
+    'companyName': autofillParams.get('company') || autofillParams.get('companyName')
+  };
+
+  for (const [id, value] of Object.entries(autofillMap)) {
+    if (value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+  }
+
+  const bType = autofillParams.get('businessType') || autofillParams.get('business_type');
+  if (bType) {
+    const bTypeEl = document.getElementById('businessType');
+    if (bTypeEl) {
+      const bTypeLower = bType.toLowerCase();
+      Array.from(bTypeEl.options).forEach(opt => {
+        if (opt.value && opt.value.toLowerCase().includes(bTypeLower)) {
+          opt.selected = true;
+        }
+      });
+    }
+  }
+
   if (heroForm) {
     heroForm.addEventListener('submit', function (e) {
       e.preventDefault();
