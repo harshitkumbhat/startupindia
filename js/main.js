@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // (HubSpot free plan has 10 custom property limit,
       // so we keep HubSpot lean and send everything to Sheets)
       // =======================================
-      var WEBHOOK_URL = ''; // <-- PASTE YOUR WEBHOOK URL HERE
+      var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyJJELUCwfNWdgtr66K4gx_unux8r7qJwzE4fe_4Q3Sc0eIX9IAt3yC-FwuwzkVleLS/exec';
 
       if (WEBHOOK_URL) {
         var webhookData = {
