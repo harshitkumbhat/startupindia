@@ -231,27 +231,46 @@ document.addEventListener('DOMContentLoaded', function () {
         hubspotData.fields.push({ name: 'campaign', value: campaignValue });
       }
 
-      // Append all attribution fields to HubSpot submission
-      const attributionFields = [
-        { name: 'utm_source', value: tracking.utm_source || '' },
-        { name: 'utm_medium', value: tracking.utm_medium || '' },
-        { name: 'utm_campaign', value: tracking.utm_campaign || '' },
-        { name: 'utm_term', value: tracking.utm_term || '' },
-        { name: 'utm_content', value: tracking.utm_content || '' },
-        { name: 'gclid', value: tracking.gclid || '' },
-        { name: 'fbclid', value: tracking.fbclid || '' },
-        { name: 'landing_page', value: tracking.landing_page || '' },
-        { name: 'referrer', value: tracking.referrer || '' },
-        { name: 'lead_location_city', value: locationData.city || '' },
-        { name: 'lead_location_region', value: locationData.region || '' },
-        { name: 'lead_location_country', value: locationData.country || '' }
-      ];
+      // =======================================
+      // Google Sheets / Agency Webhook
+      // Send FULL attribution data to a webhook
+      // (HubSpot free plan has 10 custom property limit,
+      // so we keep HubSpot lean and send everything to Sheets)
+      // =======================================
+      var WEBHOOK_URL = ''; // <-- PASTE YOUR WEBHOOK URL HERE
 
-      attributionFields.forEach(function(field) {
-        if (field.value) {
-          hubspotData.fields.push(field);
-        }
-      });
+      if (WEBHOOK_URL) {
+        var webhookData = {
+          timestamp: new Date().toISOString(),
+          name: name,
+          email: email,
+          phone: '+91' + mobile,
+          businessType: businessType,
+          company: companyName,
+          campaign: campaignValue,
+          utm_source: tracking.utm_source || '',
+          utm_medium: tracking.utm_medium || '',
+          utm_campaign: tracking.utm_campaign || '',
+          utm_term: tracking.utm_term || '',
+          utm_content: tracking.utm_content || '',
+          gclid: tracking.gclid || '',
+          fbclid: tracking.fbclid || '',
+          landing_page: tracking.landing_page || '',
+          referrer: tracking.referrer || '',
+          lead_location_city: locationData.city || '',
+          lead_location_region: locationData.region || '',
+          lead_location_country: locationData.country || '',
+          pageUrl: window.location.href
+        };
+
+        fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(webhookData)
+        }).catch(function(err) {
+          console.log('Webhook error (non-critical):', err);
+        });
+      }
 
       fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
         method: 'POST',
