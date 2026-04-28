@@ -265,8 +265,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetch(WEBHOOK_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(webhookData)
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(webhookData)
         }).catch(function(err) {
           console.log('Webhook error (non-critical):', err);
         });
