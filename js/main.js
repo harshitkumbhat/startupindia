@@ -103,6 +103,53 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // ===================================
+  // Marketing Attribution Tracking
+  // ===================================
+  (function initAttributionTracking() {
+    const existing = getCookie('pi_tracking');
+    let tracking = {};
+    if (existing) {
+      try { tracking = JSON.parse(existing); } catch(e) {}
+    }
+    
+    // Only set first-touch values if not already set
+    if (!tracking.landing_page) {
+      const params = new URLSearchParams(window.location.search);
+      tracking.landing_page = window.location.href.split('?')[0];
+      tracking.referrer = document.referrer || '';
+      tracking.utm_source = params.get('utm_source') || '';
+      tracking.utm_medium = params.get('utm_medium') || '';
+      tracking.utm_campaign = params.get('utm_campaign') || '';
+      tracking.utm_term = params.get('utm_term') || '';
+      tracking.utm_content = params.get('utm_content') || '';
+      tracking.gclid = params.get('gclid') || '';
+      tracking.fbclid = params.get('fbclid') || '';
+      tracking.first_visit = new Date().toISOString();
+      setCookie('pi_tracking', JSON.stringify(tracking), 30);
+    }
+  })();
+
+  // Capture location via IP (non-blocking, best-effort)
+  (function initLocationTracking() {
+    if (getCookie('pi_location')) return;
+    fetch('https://ipwho.is/')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          const loc = {
+            city: data.city || '',
+            region: data.region || '',
+            country: data.country || '',
+            country_code: data.country_code || '',
+            ip: data.ip || ''
+          };
+          setCookie('pi_location', JSON.stringify(loc), 30);
+        }
+      })
+      .catch(function() {});
+  })();
+
   if (heroForm) {
     heroForm.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -119,6 +166,19 @@ document.addEventListener('DOMContentLoaded', function () {
       // URL parameters for campaign tracking
       const urlParams = new URLSearchParams(window.location.search);
       const campaignValue = urlParams.get('utm_campaign') || urlParams.get('campaign') || '';
+
+      // Read attribution tracking cookies
+      let tracking = {};
+      try {
+        const trackingCookie = getCookie('pi_tracking');
+        if (trackingCookie) tracking = JSON.parse(trackingCookie);
+      } catch(e) {}
+
+      let locationData = {};
+      try {
+        const locCookie = getCookie('pi_location');
+        if (locCookie) locationData = JSON.parse(locCookie);
+      } catch(e) {}
 
       // Basic validation
       if (!name || !email || !mobile || !companyName) {
@@ -171,6 +231,28 @@ document.addEventListener('DOMContentLoaded', function () {
         hubspotData.fields.push({ name: 'campaign', value: campaignValue });
       }
 
+      // Append all attribution fields to HubSpot submission
+      const attributionFields = [
+        { name: 'utm_source', value: tracking.utm_source || '' },
+        { name: 'utm_medium', value: tracking.utm_medium || '' },
+        { name: 'utm_campaign', value: tracking.utm_campaign || '' },
+        { name: 'utm_term', value: tracking.utm_term || '' },
+        { name: 'utm_content', value: tracking.utm_content || '' },
+        { name: 'gclid', value: tracking.gclid || '' },
+        { name: 'fbclid', value: tracking.fbclid || '' },
+        { name: 'landing_page', value: tracking.landing_page || '' },
+        { name: 'referrer', value: tracking.referrer || '' },
+        { name: 'lead_location_city', value: locationData.city || '' },
+        { name: 'lead_location_region', value: locationData.region || '' },
+        { name: 'lead_location_country', value: locationData.country || '' }
+      ];
+
+      attributionFields.forEach(function(field) {
+        if (field.value) {
+          hubspotData.fields.push(field);
+        }
+      });
+
       fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -200,6 +282,16 @@ document.addEventListener('DOMContentLoaded', function () {
   function getCookie(name) {
     var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
     return match ? match[2] : null;
+  }
+
+  function setCookie(name, value, days) {
+    var expires = '';
+    if (days) {
+      var date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires = '; expires=' + date.toUTCString();
+    }
+    document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
   }
 
   function isValidEmail(email) {
