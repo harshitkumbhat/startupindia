@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Form Utility Functions
   function getCookie(name) {
     var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? match[2] : null;
+    return match ? decodeURIComponent(match[2]) : null;
   }
 
   function setCookie(name, value, days) {
