@@ -174,12 +174,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (trackingCookie) tracking = JSON.parse(trackingCookie);
       } catch(e) {}
 
-      let locationData = {};
-      try {
-        const locCookie = getCookie('pi_location');
-        if (locCookie) locationData = JSON.parse(locCookie);
-      } catch(e) {}
-
       // Basic validation
       if (!name || !email || !mobile || !companyName) {
         showFormError('Please fill in all fields.');
@@ -199,101 +193,131 @@ document.addEventListener('DOMContentLoaded', function () {
       // Show loading state
       setFormLoading(true);
 
-      // =======================================
-      // HubSpot CRM Integration
-      // =======================================
-      var HUBSPOT_PORTAL_ID = '245174552';
-      var HUBSPOT_FORM_GUID = '3bc1107d-b15a-4037-815d-714aeaf6a2dd';
+      // Get location data (from cookie or fetch fresh at submit time)
+      var locationPromise = new Promise(function(resolve) {
+        var locCookie = getCookie('pi_location');
+        if (locCookie) {
+          try {
+            var loc = JSON.parse(locCookie);
+            if (loc.city) {
+              resolve(loc);
+              return;
+            }
+          } catch(e) {}
+        }
+        fetch('https://ipwho.is/')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.success) {
+              var loc = {
+                city: data.city || '',
+                region: data.region || '',
+                country: data.country || ''
+              };
+              setCookie('pi_location', JSON.stringify(loc), 30);
+              resolve(loc);
+            } else {
+              resolve({ city: '', region: '', country: '' });
+            }
+          })
+          .catch(function() {
+            resolve({ city: '', region: '', country: '' });
+          });
+      });
 
-      // Read HubSpot tracking cookie
-      var hutk = getCookie('hubspotutk');
+      locationPromise.then(function(locationData) {
+        // =======================================
+        // HubSpot CRM Integration
+        // =======================================
+        var HUBSPOT_PORTAL_ID = '245174552';
+        var HUBSPOT_FORM_GUID = '3bc1107d-b15a-4037-815d-714aeaf6a2dd';
 
-      var hubspotContext = {
-        pageUri: window.location.href,
-        pageName: document.title
-      };
-      if (hutk) {
-        hubspotContext.hutk = hutk;
-      }
+        var hutk = getCookie('hubspotutk');
 
-      var hubspotData = {
-        fields: [
-          { name: 'firstname', value: name },
-          { name: 'email', value: email },
-          { name: 'phone', value: '+91' + mobile },
-          { name: 'business_type', value: businessType },
-          { name: 'company', value: companyName }
-        ],
-        context: hubspotContext
-      };
+        var hubspotContext = {
+          pageUri: window.location.href,
+          pageName: document.title
+        };
+        if (hutk) {
+          hubspotContext.hutk = hutk;
+        }
 
-      if (campaignValue) {
-        hubspotData.fields.push({ name: 'campaign', value: campaignValue });
-      }
-
-      // =======================================
-      // Google Sheets / Agency Webhook
-      // Send FULL attribution data to a webhook
-      // (HubSpot free plan has 10 custom property limit,
-      // so we keep HubSpot lean and send everything to Sheets)
-      // =======================================
-      var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbytxOQSVJdI2VpqyNullUOJrEYzapX48c8-oU7seJ_AuSf2JkfepZ_iOzWKmNXh7PM_/exec';
-
-      if (WEBHOOK_URL) {
-        var webhookData = {
-          timestamp: new Date().toISOString(),
-          name: name,
-          email: email,
-          phone: '+91' + mobile,
-          businessType: businessType,
-          company: companyName,
-          campaign: campaignValue,
-          utm_source: tracking.utm_source || '',
-          utm_medium: tracking.utm_medium || '',
-          utm_campaign: tracking.utm_campaign || '',
-          utm_term: tracking.utm_term || '',
-          utm_content: tracking.utm_content || '',
-          gclid: tracking.gclid || '',
-          fbclid: tracking.fbclid || '',
-          landing_page: tracking.landing_page || '',
-          referrer: tracking.referrer || '',
-          lead_location_city: locationData.city || '',
-          lead_location_region: locationData.region || '',
-          lead_location_country: locationData.country || '',
-          pageUrl: window.location.href
+        var hubspotData = {
+          fields: [
+            { name: 'firstname', value: name },
+            { name: 'email', value: email },
+            { name: 'phone', value: '+91' + mobile },
+            { name: 'business_type', value: businessType },
+            { name: 'company', value: companyName }
+          ],
+          context: hubspotContext
         };
 
-        fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(webhookData)
-        }).catch(function(err) {
-          console.log('Webhook error (non-critical):', err);
-        });
-      }
+        if (campaignValue) {
+          hubspotData.fields.push({ name: 'campaign', value: campaignValue });
+        }
 
-      fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hubspotData)
-      })
-        .then(function (response) {
-          if (!response.ok) {
-            return response.json().then(function (errData) {
-              throw new Error(errData.message || 'Submission failed');
-            });
-          }
-          return response.json();
+        // =======================================
+        // Google Sheets / Agency Webhook
+        // =======================================
+        var WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbytxOQSVJdI2VpqyNullUOJrEYzapX48c8-oU7seJ_AuSf2JkfepZ_iOzWKmNXh7PM_/exec';
+
+        if (WEBHOOK_URL) {
+          var webhookData = {
+            timestamp: new Date().toISOString(),
+            name: name,
+            email: email,
+            phone: '+91' + mobile,
+            businessType: businessType,
+            company: companyName,
+            campaign: campaignValue,
+            utm_source: tracking.utm_source || '',
+            utm_medium: tracking.utm_medium || '',
+            utm_campaign: tracking.utm_campaign || '',
+            utm_term: tracking.utm_term || '',
+            utm_content: tracking.utm_content || '',
+            gclid: tracking.gclid || '',
+            fbclid: tracking.fbclid || '',
+            landing_page: tracking.landing_page || '',
+            referrer: tracking.referrer || '',
+            lead_location_city: locationData.city || '',
+            lead_location_region: locationData.region || '',
+            lead_location_country: locationData.country || '',
+            pageUrl: window.location.href
+          };
+
+          fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(webhookData)
+          }).catch(function(err) {
+            console.log('Webhook error (non-critical):', err);
+          });
+        }
+
+        fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(hubspotData)
         })
-        .then(function (data) {
-          setFormLoading(false);
-          showFormSuccess();
-        })
-        .catch(function (error) {
-          console.error('HubSpot submission error:', error);
-          setFormLoading(false);
-          showFormError('Something went wrong. Please try again.');
-        });
+          .then(function (response) {
+            if (!response.ok) {
+              return response.json().then(function (errData) {
+                throw new Error(errData.message || 'Submission failed');
+              });
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            setFormLoading(false);
+            showFormSuccess();
+          })
+          .catch(function (error) {
+            console.error('HubSpot submission error:', error);
+            setFormLoading(false);
+            showFormError('Something went wrong. Please try again.');
+          });
+      });
     });
   }
 
