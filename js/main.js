@@ -147,7 +147,21 @@ document.addEventListener('DOMContentLoaded', function () {
           setCookie('pi_location', JSON.stringify(loc), 30);
         }
       })
-      .catch(function() {});
+      .catch(function() {
+        fetch('https://ipapi.co/json/')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            const loc = {
+              city: data.city || '',
+              region: data.region || '',
+              country: data.country_name || '',
+              country_code: data.country_code || '',
+              ip: data.ip || ''
+            };
+            setCookie('pi_location', JSON.stringify(loc), 30);
+          })
+          .catch(function() {});
+      });
   })();
 
   if (heroForm) {
@@ -205,9 +219,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
           } catch(e) {}
         }
+        console.log('Fetching location...');
         fetch('https://ipwho.is/')
           .then(function(r) { return r.json(); })
           .then(function(data) {
+            console.log('ipwho.is response:', data);
             if (data.success) {
               var loc = {
                 city: data.city || '',
@@ -217,11 +233,27 @@ document.addEventListener('DOMContentLoaded', function () {
               setCookie('pi_location', JSON.stringify(loc), 30);
               resolve(loc);
             } else {
-              resolve({ city: '', region: '', country: '' });
+              throw new Error('ipwho.is failed');
             }
           })
-          .catch(function() {
-            resolve({ city: '', region: '', country: '' });
+          .catch(function(err) {
+            console.log('ipwho.is failed, trying fallback...', err);
+            fetch('https://ipapi.co/json/')
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                console.log('ipapi.co response:', data);
+                var loc = {
+                  city: data.city || '',
+                  region: data.region || '',
+                  country: data.country_name || ''
+                };
+                setCookie('pi_location', JSON.stringify(loc), 30);
+                resolve(loc);
+              })
+              .catch(function(err2) {
+                console.log('All location APIs failed:', err2);
+                resolve({ city: '', region: '', country: '' });
+              });
           });
       });
 
@@ -286,6 +318,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pageUrl: window.location.href
           };
 
+          console.log('Sending webhook data:', webhookData);
           fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
