@@ -92,15 +92,156 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const bType = autofillParams.get('businessType') || autofillParams.get('business_type');
   if (bType) {
-    const bTypeEl = document.getElementById('businessType');
-    if (bTypeEl) {
-      const bTypeLower = bType.toLowerCase();
-      Array.from(bTypeEl.options).forEach(opt => {
-        if (opt.value && opt.value.toLowerCase().includes(bTypeLower)) {
-          opt.selected = true;
-        }
-      });
+    const bTypeLower = bType.toLowerCase();
+    const entityValue = bTypeLower.includes('llp') || bTypeLower.includes('liability') ? 'llp'
+      : (bTypeLower.includes('pvt') || bTypeLower.includes('private') ? 'pvt_ltd' : '');
+    const entityEl = entityValue && document.querySelector('input[name="entity"][value="' + entityValue + '"]');
+    if (entityEl) entityEl.checked = true;
+  }
+
+  // ===================================
+  // Multi-step Lead Qualification Form
+  // ===================================
+  const DPIIT_PRICE = '₹9,999/-';
+  const INCORPORATION_PRICE = '₹24,999';
+  const ENTITY_LABELS = {
+    pvt_ltd: 'Private Limited Company',
+    llp: 'Limited Liability Partnership',
+    not_incorporated: 'Not Incorporated',
+    prop_partnership: 'Proprietorship / Partnership'
+  };
+  // Lead types that count as Google Ads conversions (shown via .form-success)
+  const QUALIFIED_LEAD_TYPES = ['dpiit', 'incorporation', 'conversion'];
+
+  function getChecked(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  }
+
+  function isIncorporated(entity) {
+    return entity === 'pvt_ltd' || entity === 'llp';
+  }
+
+  function getLeadProfile() {
+    const entity = getChecked('entity');
+    const companyAge = isIncorporated(entity) ? getChecked('company_age') : '';
+    const budgetFit = getChecked('budget_fit');
+    let leadType;
+    if (budgetFit === 'Looking for free or cheaper option') {
+      leadType = 'low_budget';
+    } else if (isIncorporated(entity)) {
+      leadType = companyAge === 'More than 10 years' ? 'not_eligible_age' : 'dpiit';
+    } else if (entity === 'not_incorporated') {
+      leadType = 'incorporation';
+    } else {
+      leadType = 'conversion';
     }
+    return {
+      entity: entity,
+      businessType: ENTITY_LABELS[entity] || '',
+      companyAge: companyAge,
+      budgetFit: budgetFit,
+      leadType: leadType,
+      qualified: QUALIFIED_LEAD_TYPES.indexOf(leadType) !== -1
+    };
+  }
+
+  function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function setVisible(id, visible) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !visible;
+  }
+
+  // Tailor step 2 and step 3 copy to the chosen entity type
+  function applyEntityChoice(entity) {
+    const incorporated = isIncorporated(entity);
+    setVisible('companyAgeGroup', incorporated);
+    setVisible('ageNotice', incorporated && getChecked('company_age') === 'More than 10 years');
+
+    const notice = document.getElementById('entityNotice');
+    if (notice) {
+      if (entity === 'not_incorporated') {
+        notice.textContent = 'DPIIT recognition needs a Pvt Ltd or LLP first. We can incorporate your company and get your DPIIT recognition together.';
+      } else if (entity === 'prop_partnership') {
+        notice.textContent = 'DPIIT recognition is only for Pvt Ltd companies and LLPs. We can convert your business into a Pvt Ltd or LLP and then get your DPIIT recognition.';
+      }
+      notice.hidden = incorporated;
+    }
+
+    const price = incorporated ? DPIIT_PRICE : INCORPORATION_PRICE;
+    setText('budgetQuestion', incorporated
+      ? 'Our CA-led plans start at ' + DPIIT_PRICE.replace('/-', '') + '. Does that work for you?'
+      : 'Pvt Ltd / LLP incorporation starts from ' + INCORPORATION_PRICE + ' including government fees (depends on number of directors and share capital). Does that work for you?');
+    setText('formPlanLabel', incorporated ? 'Plan starting at' : 'Incorporation from');
+    setText('formPlanAmount', price);
+    setText('formPriceNote', incorporated ? 'Starting ' + DPIIT_PRICE : 'From ' + INCORPORATION_PRICE + ' incl. govt fees');
+
+    const companyNameEl = document.getElementById('companyName');
+    if (companyNameEl) {
+      companyNameEl.required = incorporated;
+      companyNameEl.placeholder = incorporated ? 'Enter your company name' : 'Proposed / current business name';
+    }
+    setText('companyNameLabel', incorporated ? 'Company Name' : 'Business Name (optional)');
+  }
+
+  function showFormStep(step) {
+    document.querySelectorAll('.form-step').forEach(function (el) {
+      el.hidden = el.getAttribute('data-form-step') !== String(step);
+    });
+    setText('formStepCount', 'Step ' + step + ' of 3');
+    const bar = document.getElementById('formProgressBar');
+    if (bar) bar.style.width = (step / 3 * 100) + '%';
+    if (heroForm) heroForm.setAttribute('data-current-step', step);
+  }
+
+  if (heroForm) {
+    showFormStep(1);
+
+    // Step 1: one tap advances
+    document.querySelectorAll('input[name="entity"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        applyEntityChoice(el.value);
+        showFormStep(2);
+      });
+    });
+
+    document.querySelectorAll('input[name="company_age"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        setVisible('ageNotice', el.value === 'More than 10 years');
+      });
+    });
+
+    document.querySelectorAll('input[name="budget_fit"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        setVisible('budgetNotice', el.value === 'Looking for free or cheaper option');
+      });
+    });
+
+    heroForm.querySelectorAll('[data-form-next]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const profile = getLeadProfile();
+        if (isIncorporated(profile.entity) && !profile.companyAge) {
+          showFormError('Please select when your company was incorporated.', btn);
+          return;
+        }
+        if (!profile.budgetFit) {
+          showFormError('Please select an option to continue.', btn);
+          return;
+        }
+        showFormStep(3);
+      });
+    });
+
+    heroForm.querySelectorAll('[data-form-back]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const current = Number(heroForm.getAttribute('data-current-step')) || 1;
+        showFormStep(Math.max(1, current - 1));
+      });
+    });
   }
 
   // ===================================
@@ -172,8 +313,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const name = document.getElementById('userName').value.trim();
       const email = document.getElementById('userEmail').value.trim();
       const mobile = document.getElementById('userMobile').value.trim();
-      const businessTypeEl = document.getElementById('businessType');
-      const businessType = businessTypeEl ? businessTypeEl.value : '';
+      const leadProfile = getLeadProfile();
+      const businessType = leadProfile.businessType;
       const companyNameEl = document.getElementById('companyName');
       const companyName = companyNameEl ? companyNameEl.value.trim() : '';
 
@@ -188,8 +329,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (trackingCookie) tracking = JSON.parse(trackingCookie);
       } catch(e) {}
 
-      // Basic validation
-      if (!name || !email || !mobile || !companyName) {
+      // Basic validation (business name is optional for not-yet-incorporated leads)
+      if (!name || !email || !mobile || (isIncorporated(leadProfile.entity) && !companyName)) {
         showFormError('Please fill in all fields.');
         return;
       }
@@ -274,20 +415,29 @@ document.addEventListener('DOMContentLoaded', function () {
           hubspotContext.hutk = hutk;
         }
 
-        var hubspotData = {
-          fields: [
-            { name: 'firstname', value: name },
-            { name: 'email', value: email },
-            { name: 'phone', value: '+91' + mobile },
-            { name: 'business_type', value: businessType },
-            { name: 'company', value: companyName }
-          ],
-          context: hubspotContext
-        };
-
-        if (campaignValue) {
-          hubspotData.fields.push({ name: 'campaign', value: campaignValue });
+        // Base fields are the ones the HubSpot form has always accepted.
+        // Company is required in HubSpot, so fill it for not-yet-incorporated leads.
+        var baseFields = [
+          { name: 'firstname', value: name },
+          { name: 'email', value: email },
+          { name: 'phone', value: '+91' + mobile },
+          { name: 'company', value: companyName || 'Not yet incorporated' }
+        ];
+        if (isIncorporated(leadProfile.entity)) {
+          baseFields.push({ name: 'business_type', value: businessType });
         }
+        if (campaignValue) {
+          baseFields.push({ name: 'campaign', value: campaignValue });
+        }
+
+        // Qualification fields need matching HubSpot properties; if HubSpot rejects
+        // them we retry with the base fields so the lead is never lost
+        var fullFields = baseFields.filter(function (f) { return f.name !== 'business_type'; }).concat([
+          { name: 'business_type', value: businessType },
+          { name: 'lead_type', value: leadProfile.leadType },
+          { name: 'company_age', value: leadProfile.companyAge },
+          { name: 'budget_fit', value: leadProfile.budgetFit }
+        ]);
 
         // =======================================
         // Google Sheets / Agency Webhook
@@ -301,6 +451,9 @@ document.addEventListener('DOMContentLoaded', function () {
             email: email,
             phone: '+91' + mobile,
             businessType: businessType,
+            leadType: leadProfile.leadType,
+            companyAge: leadProfile.companyAge,
+            budgetFit: leadProfile.budgetFit,
             company: companyName,
             campaign: campaignValue,
             utm_source: tracking.utm_source || '',
@@ -328,22 +481,38 @@ document.addEventListener('DOMContentLoaded', function () {
           });
         }
 
-        fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(hubspotData)
-        })
-          .then(function (response) {
-            if (!response.ok) {
-              return response.json().then(function (errData) {
-                throw new Error(errData.message || 'Submission failed');
-              });
-            }
-            return response.json();
+        function submitToHubSpot(fields) {
+          return fetch('https://api.hsforms.com/submissions/v3/integration/submit/' + HUBSPOT_PORTAL_ID + '/' + HUBSPOT_FORM_GUID, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: fields, context: hubspotContext })
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                return response.json().then(function (errData) {
+                  throw new Error(errData.message || 'Submission failed');
+                });
+              }
+              return response.json();
+            });
+        }
+
+        submitToHubSpot(fullFields)
+          .catch(function (err) {
+            console.log('HubSpot rejected qualification fields, retrying with base fields:', err);
+            return submitToHubSpot(baseFields);
           })
           .then(function (data) {
             setFormLoading(false);
-            showFormSuccess();
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+              event: 'lead_submit',
+              lead_type: leadProfile.leadType,
+              business_type: businessType,
+              company_age: leadProfile.companyAge,
+              budget_fit: leadProfile.budgetFit
+            });
+            showFormSuccess(leadProfile);
           })
           .catch(function (error) {
             console.error('HubSpot submission error:', error);
@@ -398,25 +567,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  function showFormSuccess() {
+  // GTM fires the Google Ads lead conversion when .form-success becomes visible,
+  // so only qualified leads get that class; others get .form-thanks
+  function showFormSuccess(profile) {
     var formCard = document.getElementById('hero-form-card');
     if (!formCard) return;
 
+    var messages = {
+      dpiit: 'We\'ve received your request. Our CA expert will call you within 30 minutes during office hours (Mon–Sat, 10 AM – 7 PM).',
+      incorporation: 'We\'ve received your request. Our CA will call you during office hours (Mon–Sat, 10 AM – 7 PM) to plan your company incorporation and DPIIT recognition.',
+      conversion: 'We\'ve received your request. Our CA will call you during office hours (Mon–Sat, 10 AM – 7 PM) to plan converting your business to a Pvt Ltd / LLP and your DPIIT recognition.',
+      low_budget: 'We\'ve noted your details. Meanwhile, you can apply yourself on the Startup India portal with no government fee — our team will reach out if we can help.',
+      not_eligible_age: 'We\'ve noted your details. Our CA will review them and advise you on the right options during office hours.'
+    };
+    var leadType = profile ? profile.leadType : 'dpiit';
+    var boxClass = !profile || profile.qualified ? 'form-success' : 'form-thanks';
+
     formCard.innerHTML = '\
       <div class="form-glow"></div>\
-      <div class="form-success">\
+      <div class="' + boxClass + '">\
         <div class="success-icon">\
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">\
             <polyline points="20 6 9 17 4 12"></polyline>\
           </svg>\
         </div>\
         <h3>Thank You!</h3>\
-        <p>We\'ve received your request. Our CA expert will call you within 30 minutes during business hours.</p>\
+        <p>' + messages[leadType] + '</p>\
       </div>\
     ';
   }
 
-  function showFormError(message) {
+  function showFormError(message, anchorEl) {
     // Remove existing error
     var existingError = heroForm.querySelector('.form-error-message');
     if (existingError) existingError.remove();
@@ -426,7 +607,8 @@ document.addEventListener('DOMContentLoaded', function () {
     errorDiv.style.cssText = 'color: #f87171; font-size: 0.8125rem; text-align: center; padding: 0.5rem; margin-top: -0.5rem; animation: fadeInUp 0.3s ease-out;';
     errorDiv.textContent = message;
 
-    submitBtn.parentNode.insertBefore(errorDiv, submitBtn);
+    var anchor = anchorEl ? anchorEl.closest('.form-step-nav') || anchorEl : submitBtn;
+    anchor.parentNode.insertBefore(errorDiv, anchor);
 
     // Auto-remove after 4 seconds
     setTimeout(function () {

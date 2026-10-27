@@ -908,6 +908,147 @@ select.form-input option {
   letter-spacing: -0.01em;
 }
 
+/* Multi-step form */
+.hero-contact-form [hidden] {
+  display: none !important;
+}
+
+.form-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.form-progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.form-progress-bar {
+  display: block;
+  height: 100%;
+  width: 33.33%;
+  background: var(--gradient-emerald);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+}
+
+.form-step-count {
+  margin: -0.75rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.option-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.option-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0.8125rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.option-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.option-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option-card:has(input:checked) {
+  border-color: var(--color-emerald);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.option-card:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(92, 62, 219, 0.35);
+}
+
+.form-notice {
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(92, 62, 219, 0.18);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: var(--radius-md);
+}
+
+.form-notice a {
+  color: var(--color-highlight-yellow);
+  text-decoration: underline;
+}
+
+.form-notice-warn {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.form-step-nav {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.form-step-nav .btn-form-next {
+  flex: 1;
+  margin-top: 0;
+}
+
+.btn-form-back {
+  padding: 0 1.25rem;
+  font-family: var(--font-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btn-form-back:hover {
+  color: var(--color-white);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-form-back-link {
+  align-self: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Form Disclaimer */
 .form-disclaimer {
   display: flex;
@@ -2607,13 +2748,15 @@ select.form-input option {
   }
 }
 
-/* Form Success State */
-.form-success {
+/* Form Success State (.form-thanks = non-converting variant, same look) */
+.form-success,
+.form-thanks {
   text-align: center;
   padding: 2rem 1rem;
 }
 
-.form-success .success-icon {
+.form-success .success-icon,
+.form-thanks .success-icon {
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -2624,14 +2767,16 @@ select.form-input option {
   margin: 0 auto 1.25rem;
 }
 
-.form-success h3 {
+.form-success h3,
+.form-thanks h3 {
   font-size: 1.375rem;
   font-weight: 700;
   color: var(--color-white);
   margin-bottom: 0.625rem;
 }
 
-.form-success p {
+.form-success p,
+.form-thanks p {
   font-size: 0.9375rem;
   color: rgba(255, 255, 255, 0.65);
   line-height: 1.6;
@@ -3682,4 +3827,154 @@ select.form-input option {
 .suite-card-tag-included {
   background: rgba(52, 211, 153, 0.1) !important;
   color: var(--color-emerald-dark) !important;
+}
+
+/* ===================================
+   Cost & Fees Section
+   =================================== */
+.cost-section {
+  background: var(--color-white);
+  padding: 100px 0 90px;
+}
+
+.cost-header {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 56px;
+}
+
+.cost-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--color-deep-indigo);
+  letter-spacing: -0.03em;
+  margin-bottom: 1.25rem;
+}
+
+.cost-highlight {
+  background: linear-gradient(135deg, var(--color-primary-purple) 0%, var(--color-bright-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cost-subtitle {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--color-gray-500);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.cost-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.cost-card {
+  position: relative;
+  padding: 32px 28px;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-xl);
+}
+
+.cost-card-featured {
+  background: rgba(124, 58, 237, 0.05);
+  border: 2px solid var(--color-bright-purple);
+  box-shadow: var(--shadow-purple);
+}
+
+.cost-card-badge {
+  position: absolute;
+  top: -13px;
+  left: 28px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-white);
+  background: var(--gradient-button);
+  border-radius: var(--radius-full);
+}
+
+.cost-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-deep-indigo);
+  margin-bottom: 0.5rem;
+}
+
+.cost-card-price {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-primary-purple);
+  margin-bottom: 1.25rem;
+}
+
+.cost-card-price span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-500);
+}
+
+.cost-card-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.cost-card-list li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-gray-600);
+}
+
+.cost-card-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0.25rem;
+  color: var(--color-light-purple);
+  font-weight: 700;
+}
+
+.cost-card-featured .cost-card-list li::before {
+  content: '✓';
+  left: 0;
+  color: var(--color-emerald-dark);
+}
+
+.cost-note {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 0.9rem;
+  color: var(--color-gray-500);
+}
+
+@media (max-width: 768px) {
+  .cost-section {
+    padding: 70px 0 60px;
+  }
+
+  .cost-title {
+    font-size: 1.875rem;
+  }
+
+  .cost-cards {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .cost-card-cta {
+    width: 100%;
+    justify-content: center;
+  }
 }
